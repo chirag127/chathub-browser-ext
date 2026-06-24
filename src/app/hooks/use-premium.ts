@@ -2,10 +2,15 @@ import { FetchError } from 'ofetch'
 import useSWR from 'swr'
 import { getPremiumActivation, validatePremium } from '~services/premium'
 
+// chathub-plus-fork: always-on premium. Open-source GPL-3.0 fork for
+// personal use only — see knowledge/index.md inside this submodule.
+const ALWAYS_PREMIUM = true
+
 export function usePremium() {
   const validationQuery = useSWR<{ valid: true } | { valid: false; error?: string }>(
     'premium-validation',
     async () => {
+      if (ALWAYS_PREMIUM) return { valid: true } // chathub-plus-fork
       try {
         return await validatePremium()
       } catch (err) {
@@ -21,15 +26,15 @@ export function usePremium() {
       }
     },
     {
-      fallbackData: getPremiumActivation() ? { valid: true } : undefined,
+      fallbackData: ALWAYS_PREMIUM ? { valid: true } : (getPremiumActivation() ? { valid: true } : undefined),
       revalidateOnFocus: false,
       dedupingInterval: 10 * 60 * 1000,
     },
   )
 
   return {
-    activated: validationQuery.data?.valid,
-    isLoading: validationQuery.isLoading,
+    activated: ALWAYS_PREMIUM ? true : validationQuery.data?.valid, // chathub-plus-fork
+    isLoading: ALWAYS_PREMIUM ? false : validationQuery.isLoading,
     error: validationQuery.data?.valid === true ? undefined : validationQuery.data?.error,
   }
 }
